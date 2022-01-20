@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from scipy.io import loadmat
 from util.load_mats import transferBFM09
 import os
+import eos
 
 def perspective_projection(focal, center):
     # return p.T (N, 3) @ (3, 3) 
@@ -49,20 +50,18 @@ class ParametricFaceModel:
         self.mean_tex = model['meantex'].astype(np.float32)
         # texture basis. [3*N,80]
         self.tex_base = model['texBase'].astype(np.float32)
-        # face indices for each vertex that lies in. starts from 0. [N,8]
-        self.point_buf = model['point_buf'].astype(np.int64) - 1
         # vertex indices for each face. starts from 0. [F,3]
         self.face_buf = model['tri'].astype(np.int64) - 1
         # vertex indices for 68 landmarks. starts from 0. [68,1]
         self.keypoints = np.squeeze(model['keypoints']).astype(np.int64) - 1
 
-        if is_train:
-            # vertex indices for small face region to compute photometric error. starts from 0.
-            self.front_mask = np.squeeze(model['frontmask2_idx']).astype(np.int64) - 1
-            # vertex indices for each face from small face region. starts from 0. [f,3]
-            self.front_face_buf = model['tri_mask2'].astype(np.int64) - 1
-            # vertex indices for pre-defined skin region to compute reflectance loss
-            self.skin_mask = np.squeeze(model['skinmask'])
+        # if is_train:
+        #     # vertex indices for small face region to compute photometric error. starts from 0.
+        #     self.front_mask = np.squeeze(model['frontmask2_idx']).astype(np.int64) - 1
+        #     # vertex indices for each face from small face region. starts from 0. [f,3]
+        #     self.front_face_buf = model['tri_mask2'].astype(np.int64) - 1
+        #     # vertex indices for pre-defined skin region to compute reflectance loss
+        #     self.skin_mask = np.squeeze(model['skinmask'])
         
         if recenter:
             mean_shape = self.mean_shape.reshape([-1, 3])
@@ -114,7 +113,7 @@ class ParametricFaceModel:
         return face_texture.reshape([batch_size, -1, 3])
 
 
-    def compute_norm(self, face_shape):
+    def compute_norm(self, face_shape, tri):
         """
         Return:
             vertex_norm      -- torch.tensor, size (B, N, 3)
@@ -123,17 +122,16 @@ class ParametricFaceModel:
             face_shape       -- torch.tensor, size (B, N, 3)
         """
 
-        v1 = face_shape[:, self.face_buf[:, 0]]
-        v2 = face_shape[:, self.face_buf[:, 1]]
-        v3 = face_shape[:, self.face_buf[:, 2]]
-        e1 = v1 - v2
-        e2 = v2 - v3
-        face_norm = torch.cross(e1, e2, dim=-1)
-        face_norm = F.normalize(face_norm, dim=-1, p=2)
-        face_norm = torch.cat([face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(self.device)], dim=1)
-        
-        vertex_norm = torch.sum(face_norm[:, self.point_buf], dim=2)
-        vertex_norm = F.normalize(vertex_norm, dim=-1, p=2)
+        vertex_norm = []
+        batch_num = face_shape.size()[0]
+        for i in range(batch_num):
+            vert = list(np.array(face_shape.detach().cpu()[i]))
+            trii = np.array(tri.detach().cpu())
+            face_norm = np.array(eos.render.compute_face_normals(vert, trii))
+            v_norm = np.array(eos.render.compute_vertex_normals(vert, trii, face_norm))
+            vertex_norm.append(v_norm)
+        # v_norm = np.expand_dims(v_norm, 0)
+        vertex_norm = torch.tensor(vertex_norm, dtype=torch.float32, requires_grad=False, device=self.device)
         return vertex_norm
 
 
@@ -249,6 +247,7 @@ class ParametricFaceModel:
         """  
         return face_proj[:, self.keypoints]
 
+
     def split_coeff(self, coeffs):
         """
         Return:
@@ -258,11 +257,11 @@ class ParametricFaceModel:
             coeffs          -- torch.tensor, size (B, 256)
         """
         id_coeffs = coeffs[:, :80]
-        exp_coeffs = coeffs[:, 80: 144]
-        tex_coeffs = coeffs[:, 144: 224]
-        angles = coeffs[:, 224: 227]
-        gammas = coeffs[:, 227: 254]
-        translations = coeffs[:, 254:]
+        exp_coeffs = coeffs[:, 80: 112]
+        tex_coeffs = coeffs[:, 112: 192]
+        angles = coeffs[:, 192: 195]
+        gammas = coeffs[:, 195: 222]
+        translations = coeffs[:, 222:]
         return {
             'id': id_coeffs,
             'exp': exp_coeffs,
@@ -271,6 +270,7 @@ class ParametricFaceModel:
             'gamma': gammas,
             'trans': translations
         }
+
     def compute_for_render(self, coeffs):
         """
         Return:
@@ -281,9 +281,8 @@ class ParametricFaceModel:
             coeffs          -- torch.tensor, size (B, 257)
         """
         coef_dict = self.split_coeff(coeffs)
-        face_shape = self.compute_shape(coef_dict['id'], coef_dict['exp'])
-        rotation = self.compute_rotation(coef_dict['angle'])
-
+        face_shape = self.compute_shape(coef_dict['id'], coef_dict['exp']) # vs
+        rotation = self.compute_rotation(coef_dict['angle'])               # angle
 
         face_shape_transformed = self.transform(face_shape, rotation, coef_dict['trans'])
         face_vertex = self.to_camera(face_shape_transformed)
@@ -292,7 +291,7 @@ class ParametricFaceModel:
         landmark = self.get_landmarks(face_proj)
 
         face_texture = self.compute_texture(coef_dict['tex'])
-        face_norm = self.compute_norm(face_shape)
+        face_norm = self.compute_norm(face_shape, self.tri)
         face_norm_roted = face_norm @ rotation
         face_color = self.compute_color(face_texture, face_norm_roted, coef_dict['gamma'])
 

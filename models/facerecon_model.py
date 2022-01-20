@@ -25,7 +25,7 @@ class FaceReconModel(BaseModel):
         parser.add_argument('--init_path', type=str, default='checkpoints/init_model/resnet50-0676ba61.pth')
         parser.add_argument('--use_last_fc', type=util.str2bool, nargs='?', const=True, default=False, help='zero initialize the last fc')
         parser.add_argument('--bfm_folder', type=str, default='BFM')
-        parser.add_argument('--bfm_model', type=str, default='BFM_model_front.mat', help='bfm model')
+        parser.add_argument('--bfm_model', type=str, default='4DFM_model_info.mat', help='bfm model')
 
         # renderer parameters
         parser.add_argument('--focal', type=float, default=1015.)
@@ -167,10 +167,11 @@ class FaceReconModel(BaseModel):
 
         self.loss_lm = self.opt.w_lm * self.compute_lm_loss(self.pred_lm, self.gt_lm)
 
-        self.loss_reflc = self.opt.w_reflc * self.compute_reflc_loss(self.pred_tex, self.facemodel.skin_mask)
+        # self.loss_reflc = self.opt.w_reflc * self.compute_reflc_loss(self.pred_tex, self.facemodel.skin_mask)
 
         self.loss_all = self.loss_feat + self.loss_color + self.loss_reg + self.loss_gamma \
-                        + self.loss_lm + self.loss_reflc
+                        + self.loss_lm
+                        # + self.loss_reflc
             
 
     def optimize_parameters(self, isTrain=True):
@@ -222,6 +223,3 @@ class FaceReconModel(BaseModel):
         pred_lm = np.stack([pred_lm[:,:,0],self.input_img.shape[2]-1-pred_lm[:,:,1]],axis=2) # transfer to image coordinate
         pred_coeffs['lm68'] = pred_lm
         savemat(name,pred_coeffs)
-
-
-

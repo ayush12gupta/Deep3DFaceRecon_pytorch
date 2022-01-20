@@ -67,7 +67,7 @@ def define_net_recog(net_recog, pretrained_path=None):
     return net
 
 class ReconNetWrapper(nn.Module):
-    fc_dim=257
+    fc_dim=225
     def __init__(self, net_recon, use_last_fc=False, init_path=None):
         super(ReconNetWrapper, self).__init__()
         self.use_last_fc = use_last_fc
