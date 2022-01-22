@@ -66,7 +66,7 @@ class FaceReconModel(BaseModel):
             )
         if is_train:
             parser.set_defaults(
-                use_crop_face=True, use_predef_M=False
+                use_crop_face=False, use_predef_M=False
             )
         return parser
 

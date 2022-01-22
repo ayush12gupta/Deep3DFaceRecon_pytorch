@@ -71,6 +71,8 @@ class ParametricFaceModel:
         self.persc_proj = perspective_projection(focal, center)
         self.device = 'cpu'
         self.camera_distance = camera_distance
+        self.camera_pos = self._get_camera_pose()
+        self.reverse_z = self._get_reverse_z()
         self.SH = SH()
         self.init_lit = init_lit.reshape([1, 1, -1]).astype(np.float32)
         
@@ -208,6 +210,16 @@ class ParametricFaceModel:
     def to_camera(self, face_shape):
         face_shape[..., -1] = self.camera_distance - face_shape[..., -1]
         return face_shape
+    
+    def _get_camera_pose(self):
+        camera_pos = torch.tensor(
+            [0.0, 0.0, 10.0], device=self.device).reshape(1, 1, 3)
+        return camera_pos
+    
+    def _get_reverse_z(self):
+        reverse_z = np.reshape(
+            np.array([1.0, 0, 0, 0, 1, 0, 0, 0, -1.0], dtype=np.float32), [1, 3, 3])
+        return torch.tensor(reverse_z, device=self.device)
 
     def to_image(self, face_shape):
         """
@@ -218,6 +230,9 @@ class ParametricFaceModel:
             face_shape       -- torch.tensor, size (B, N, 3)
         """
         # to image_plane
+        batchsize = face_shape.shape[0]
+
+        face_shape = torch.matmul(face_shape, self.reverse_z.repeat((batchsize, 1, 1))) + self.camera_pos
         face_proj = face_shape @ self.persc_proj
         face_proj = face_proj[..., :2] / face_proj[..., 2:]
 
