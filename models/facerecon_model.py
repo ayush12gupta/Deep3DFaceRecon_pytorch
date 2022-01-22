@@ -101,7 +101,7 @@ class FaceReconModel(BaseModel):
         )
 
         if self.isTrain:
-            self.loss_names = ['all', 'feat', 'color', 'lm', 'reg', 'gamma', 'reflc']
+            self.loss_names = ['all', 'feat', 'color', 'lm', 'reg', 'gamma']  # , 'reflc']
 
             self.net_recog = networks.define_net_recog(
                 net_recog=opt.net_recog, pretrained_path=opt.net_recog_path
