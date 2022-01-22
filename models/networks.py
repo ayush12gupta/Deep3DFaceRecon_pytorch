@@ -83,7 +83,7 @@ class ReconNetWrapper(nn.Module):
         if not use_last_fc:
             self.final_layers = nn.ModuleList([
                 conv1x1(last_dim, 80, bias=True), # id layer
-                conv1x1(last_dim, 64, bias=True), # exp layer
+                conv1x1(last_dim, 32, bias=True), # exp layer
                 conv1x1(last_dim, 80, bias=True), # tex layer
                 conv1x1(last_dim, 3, bias=True),  # angle layer
                 conv1x1(last_dim, 27, bias=True), # gamma layer
