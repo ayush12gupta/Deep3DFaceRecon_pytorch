@@ -291,7 +291,7 @@ class ParametricFaceModel:
         landmark = self.get_landmarks(face_proj)
 
         face_texture = self.compute_texture(coef_dict['tex'])
-        face_norm = self.compute_norm(face_shape, self.tri)
+        face_norm = self.compute_norm(face_shape, self.face_buf)
         face_norm_roted = face_norm @ rotation
         face_color = self.compute_color(face_texture, face_norm_roted, coef_dict['gamma'])
 
