@@ -230,9 +230,9 @@ class ParametricFaceModel:
             face_shape       -- torch.tensor, size (B, N, 3)
         """
         # to image_plane
-        batchsize = face_shape.shape[0]
+        # batchsize = face_shape.shape[0]
 
-        face_shape = torch.matmul(face_shape, self.reverse_z.repeat((batchsize, 1, 1))) + self.camera_pos
+        # face_shape = torch.matmul(face_shape, self.reverse_z.repeat((batchsize, 1, 1))) + self.camera_pos
         face_proj = face_shape @ self.persc_proj
         face_proj = face_proj[..., :2] / face_proj[..., 2:]
 
@@ -303,6 +303,8 @@ class ParametricFaceModel:
         face_vertex = self.to_camera(face_shape_transformed)
         
         face_proj = self.to_image(face_vertex)
+        H = 224
+        face_proj[:, :, -1] = H - 1 - face_proj[:, :, -1]
         landmark = self.get_landmarks(face_proj)
 
         face_texture = self.compute_texture(coef_dict['tex'])

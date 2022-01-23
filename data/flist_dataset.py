@@ -84,12 +84,14 @@ class FlistDataset(BaseDataset):
         raw_img = Image.open(img_path).convert('RGB')
         raw_msk = Image.open(msk_path).convert('RGB')
         raw_lm = np.loadtxt(lm_path).astype(np.float32)
-
-        _, img, lm, msk = align_img(raw_img, raw_lm, self.lm3d_std, raw_msk)
+        img = raw_img.copy()
+        lm = raw_lm.copy()
+        msk = raw_msk.copy()
+        # _, img, lm, msk = align_img(raw_img, raw_lm, self.lm3d_std, raw_msk)
         
         aug_flag = self.opt.use_aug and self.opt.isTrain
-        if aug_flag:
-            img, lm, msk = self._augmentation(img, lm, self.opt, msk)
+        # if aug_flag:
+        #     img, lm, msk = self._augmentation(img, lm, self.opt, msk)
         
         _, H = img.size
         M = estimate_norm(lm, H)
