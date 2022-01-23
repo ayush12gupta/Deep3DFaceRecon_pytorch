@@ -167,11 +167,10 @@ class FaceReconModel(BaseModel):
 
         self.loss_lm = self.opt.w_lm * self.compute_lm_loss(self.pred_lm, self.gt_lm)
 
-        # self.loss_reflc = self.opt.w_reflc * self.compute_reflc_loss(self.pred_tex, self.facemodel.skin_mask)
+        self.loss_reflc = self.opt.w_reflc * self.compute_reflc_loss(self.pred_tex)
 
         self.loss_all = self.loss_feat + self.loss_color + self.loss_reg + self.loss_gamma \
-                        + self.loss_lm
-                        # + self.loss_reflc
+                        + self.loss_lm + self.loss_reflc
             
 
     def optimize_parameters(self, isTrain=True):

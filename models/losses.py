@@ -64,7 +64,16 @@ def landmark_loss(predict_lm, gt_lm, weight=None):
     if not weight:
         weight = np.ones([68])
         weight[28:31] = 20
+        weight[48:-8] = 10
         weight[-8:] = 20
+        weight[:7] = 0
+        weight[9:17] = 0
+        weight[18] = 0
+        weight[20] = 0
+        weight[23] = 0
+        weight[25] = 0
+        weight[32] = 0
+        weight[34] = 0
         weight = np.expand_dims(weight, 0)
         weight = torch.tensor(weight).to(predict_lm.device)
     loss = torch.sum((predict_lm - gt_lm)**2, dim=-1) * weight
@@ -98,7 +107,7 @@ def reg_loss(coeffs_dict, opt=None):
 
     return creg_loss, gamma_loss
 
-def reflectance_loss(texture, mask):
+def reflectance_loss(texture):
     """
     minimize texture variance (mse), albedo regularization to ensure an uniform skin albedo
     Parameters:
@@ -106,8 +115,9 @@ def reflectance_loss(texture, mask):
         mask          --torch.tensor, (N), 1 or 0
 
     """
-    mask = mask.reshape([1, mask.shape[0], 1])
-    texture_mean = torch.sum(mask * texture, dim=1, keepdims=True) / torch.sum(mask)
-    loss = torch.sum(((texture - texture_mean) * mask)**2) / (texture.shape[0] * torch.sum(mask))
+    # mask = mask.reshape([1, mask.shape[0], 1])
+    N = texture.size()[1]
+    texture_mean = torch.sum(texture, dim=1, keepdims=True) / N
+    loss = torch.sum((texture - texture_mean)**2) / (texture.shape[0])
     return loss
 
