@@ -195,7 +195,7 @@ def draw_landmarks(img, landmark, color='r', step=2):
 
     _, H, W, _ = img.shape
     img, landmark = img.copy(), landmark.copy()
-    landmark[..., 1] = H - 1 - landmark[..., 1]
+    # landmark[..., 1] = H - 1 - landmark[..., 1]
     landmark = np.round(landmark).astype(np.int32)
     for i in range(landmark.shape[1]):
         x, y = landmark[:, i, 0], landmark[:, i, 1]
