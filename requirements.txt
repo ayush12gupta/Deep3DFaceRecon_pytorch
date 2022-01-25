@@ -1,0 +1,11 @@
+matplotlib==2.2.5
+tensorboard==1.15.0
+dominate==2.6.0
+trimesh==3.9.20
+torch==1.6.0
+torchvision==0.7.0
+scikit-image==0.16.2
+scipy==1.4.1
+kornia
+ninja
+opencv-python
