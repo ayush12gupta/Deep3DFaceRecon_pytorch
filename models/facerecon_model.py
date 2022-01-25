@@ -48,7 +48,7 @@ class FaceReconModel(BaseModel):
             parser.add_argument('--rot_angle', type=float, default=10., help='rot angles, degree')
 
             # loss weights
-            parser.add_argument('--w_feat', type=float, default=0.2, help='weight for feat loss')
+            parser.add_argument('--w_feat', type=float, default=2, help='weight for feat loss')
             parser.add_argument('--w_color', type=float, default=2.92, help='weight for loss loss')
             parser.add_argument('--w_reg', type=float, default=9.0e-3, help='weight for reg loss')
             parser.add_argument('--w_id', type=float, default=4.0, help='weight for id_reg loss')
