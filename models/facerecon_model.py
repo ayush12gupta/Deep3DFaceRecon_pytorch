@@ -54,7 +54,7 @@ class FaceReconModel(BaseModel):
             parser.add_argument('--w_id', type=float, default=4.0, help='weight for id_reg loss')
             parser.add_argument('--w_exp', type=float, default=2, help='weight for exp_reg loss')
             parser.add_argument('--w_tex', type=float, default=1.7e-2, help='weight for tex_reg loss')
-            parser.add_argument('--w_gamma', type=float, default=10.0, help='weight for gamma loss')
+            parser.add_argument('--w_gamma', type=float, default=40.0, help='weight for gamma loss')
             parser.add_argument('--w_lm', type=float, default=3.2e-3, help='weight for lm loss')
             parser.add_argument('--w_reflc', type=float, default=0.01, help='weight for reflc loss')
 
