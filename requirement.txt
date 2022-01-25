@@ -3,6 +3,6 @@ tensorboard==1.15.0
 dominate==2.6.0
 trimesh==3.9.20
 torch==1.7.1
-torchvision==0.7.0
+torchvision==0.8.2
 kornia
 ninja
