@@ -263,6 +263,9 @@ class BaseModel(ABC):
                     net = net.module
                 net.load_state_dict(state_dict[name])
         
+        lr = self.optimizers[0].param_groups[0]['lr']
+        print('learning rate = %.7f' % lr)
+        
         if self.opt.phase != 'test':
             if self.opt.continue_train:
                 print('loading the optim from %s' % load_path)
