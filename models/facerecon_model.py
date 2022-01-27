@@ -49,7 +49,7 @@ class FaceReconModel(BaseModel):
 
             # loss weights
             parser.add_argument('--w_feat', type=float, default=4, help='weight for feat loss')
-            parser.add_argument('--w_color', type=float, default=4.92, help='weight for loss loss')
+            parser.add_argument('--w_color', type=float, default=3.92, help='weight for loss loss')
             parser.add_argument('--w_reg', type=float, default=3.0e-3, help='weight for reg loss')
             parser.add_argument('--w_id', type=float, default=1.0, help='weight for id_reg loss')
             parser.add_argument('--w_exp', type=float, default=0.8, help='weight for exp_reg loss')
