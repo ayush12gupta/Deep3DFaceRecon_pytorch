@@ -137,8 +137,8 @@ class FaceReconModel(BaseModel):
             self.facemodel.compute_for_render(output_coeff)
         self.pred_mask, _, self.pred_face = self.renderer(
             self.pred_vertex, self.facemodel.face_buf, feat=self.pred_color)
-        # self.pred_albedo_mask, _, self.pred_albedo_face = self.renderer(
-        #     self.pred_vertex, self.facemodel.face_buf, feat=self.pred_tex)
+        self.pred_albedo_mask, _, self.pred_albedo_face = self.renderer(
+            self.pred_vertex, self.facemodel.face_buf, feat=self.pred_tex.contiguous())
         
         self.pred_coeffs_dict = self.facemodel.split_coeff(output_coeff)
 
@@ -189,8 +189,8 @@ class FaceReconModel(BaseModel):
             input_img_numpy = 255. * self.input_img.detach().cpu().permute(0, 2, 3, 1).numpy()
             output_vis = self.pred_face * self.pred_mask + (1 - self.pred_mask) * self.input_img
             output_vis_numpy_raw = 255. * output_vis.detach().cpu().permute(0, 2, 3, 1).numpy()
-            # output_albedo_vis = self.pred_albedo_face * self.pred_albedo_mask + (1 - self.pred_albedo_mask) * self.input_img
-            # output_albedo_vis_numpy_raw = 255. * output_albedo_vis.detach().cpu().permute(0, 2, 3, 1).numpy()
+            output_albedo_vis = self.pred_albedo_face * self.pred_albedo_mask + (1 - self.pred_albedo_mask) * self.input_img
+            output_albedo_vis_numpy_raw = 255. * output_albedo_vis.detach().cpu().permute(0, 2, 3, 1).numpy()
             
             if self.gt_lm is not None:
                 gt_lm_numpy = self.gt_lm.cpu().numpy()
@@ -198,7 +198,7 @@ class FaceReconModel(BaseModel):
                 output_vis_numpy = util.draw_landmarks(output_vis_numpy_raw, gt_lm_numpy, 'b')
                 output_vis_numpy = util.draw_landmarks(output_vis_numpy, pred_lm_numpy, 'r')
             
-                output_vis_numpy = np.concatenate((input_img_numpy, 
+                output_vis_numpy = np.concatenate((input_img_numpy, output_albedo_vis_numpy_raw,
                                     output_vis_numpy_raw, output_vis_numpy), axis=-2)
             else:
                 output_vis_numpy = np.concatenate((input_img_numpy, 
