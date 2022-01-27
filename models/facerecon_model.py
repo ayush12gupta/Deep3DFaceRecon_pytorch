@@ -48,13 +48,13 @@ class FaceReconModel(BaseModel):
             parser.add_argument('--rot_angle', type=float, default=10., help='rot angles, degree')
 
             # loss weights
-            parser.add_argument('--w_feat', type=float, default=7, help='weight for feat loss')
-            parser.add_argument('--w_color', type=float, default=3.92, help='weight for loss loss')
-            parser.add_argument('--w_reg', type=float, default=5.0e-3, help='weight for reg loss')
-            parser.add_argument('--w_id', type=float, default=2.0, help='weight for id_reg loss')
-            parser.add_argument('--w_exp', type=float, default=1, help='weight for exp_reg loss')
+            parser.add_argument('--w_feat', type=float, default=4, help='weight for feat loss')
+            parser.add_argument('--w_color', type=float, default=4.92, help='weight for loss loss')
+            parser.add_argument('--w_reg', type=float, default=3.0e-3, help='weight for reg loss')
+            parser.add_argument('--w_id', type=float, default=1.0, help='weight for id_reg loss')
+            parser.add_argument('--w_exp', type=float, default=0.8, help='weight for exp_reg loss')
             parser.add_argument('--w_tex', type=float, default=1.7e-2, help='weight for tex_reg loss')
-            parser.add_argument('--w_gamma', type=float, default=40.0, help='weight for gamma loss')
+            parser.add_argument('--w_gamma', type=float, default=20.0, help='weight for gamma loss')
             parser.add_argument('--w_lm', type=float, default=3.2e-3, help='weight for lm loss')
             parser.add_argument('--w_reflc', type=float, default=0.01, help='weight for reflc loss')
 
