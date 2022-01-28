@@ -45,7 +45,7 @@ class ParametricFaceModel:
         # identity basis. [3*N,80]
         self.id_base = model['idBase'].astype(np.float32)
         # expression basis. [3*N,64]
-        self.exp_base = model['exBase'].astype(np.float32)
+        self.exp_base = model['exBase'].astype(np.float32)*1e4
         # mean face texture. [3*N,1] (0-255)
         self.mean_tex = model['meantex'].astype(np.float32)
         # texture basis. [3*N,80]
