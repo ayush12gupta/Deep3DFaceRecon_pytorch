@@ -61,7 +61,7 @@ class BaseOptions():
 
         # get the basic options
         if self.cmd_line is None:
-            opt, _ = parser.parse_known_args()
+            opt, _ = parser.parse_known_args()  
         else:
             opt, _ = parser.parse_known_args(self.cmd_line)
 

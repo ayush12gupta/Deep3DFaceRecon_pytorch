@@ -12,6 +12,8 @@ from util.nvdiffrast import MeshRenderer
 from util.preprocess import estimate_norm_torch
 
 import trimesh
+from pytorch3d.structures import Meshes
+from pytorch3d.renderer import TexturesVertex
 from scipy.io import savemat
 
 class FaceReconModel(BaseModel):
@@ -131,15 +133,18 @@ class FaceReconModel(BaseModel):
         self.image_paths = input['im_paths'] if 'im_paths' in input else None
 
     def forward(self):
+        n_b = self.input_img.size()[0]
         output_coeff = self.net_recon(self.input_img)
         self.facemodel.to(self.device)
-        self.pred_vertex, self.pred_tex, self.pred_color, self.pred_lm = \
+        self.pred_shape, self.pred_vertex, self.pred_tex, self.pred_color, self.pred_lm = \
             self.facemodel.compute_for_render(output_coeff)
+        texture = TexturesVertex(self.pred_color)
+        meshes = Meshes(self.pred_shape, self.facemodel.face_buf.repeat(n_b, 1, 1), texture)
+        imgs = self.facemodel.renderer(meshes)
         self.pred_mask, _, self.pred_face = self.renderer(
             self.pred_vertex, self.facemodel.face_buf, feat=self.pred_color)
-        self.pred_albedo_mask, _, self.pred_albedo_face = self.renderer(
-            self.pred_vertex, self.facemodel.face_buf, feat=self.pred_tex.contiguous())
         
+
         self.pred_coeffs_dict = self.facemodel.split_coeff(output_coeff)
 
 

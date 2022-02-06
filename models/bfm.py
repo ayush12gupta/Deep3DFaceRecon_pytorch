@@ -8,6 +8,32 @@ from scipy.io import loadmat
 from util.load_mats import transferBFM09
 import os
 import eos
+from pytorch3d.structures import Meshes
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    FoVPerspectiveCameras,
+    PointLights,
+    RasterizationSettings,
+    MeshRenderer,
+    MeshRasterizer,
+    SoftPhongShader,
+    TexturesVertex,
+    blending
+)
+
+def save_obj(path, v, f, c):
+    with open(path, 'w') as file:
+        for i in range(len(v)):
+            file.write('v %f %f %f %f %f %f\n' %
+                       (v[i, 0], v[i, 1], v[i, 2], c[i, 0], c[i, 1], c[i, 2]))
+
+        file.write('\n')
+
+        for i in range(len(f)):
+            file.write('f %d %d %d\n' % (f[i, 0], f[i, 1], f[i, 2]))
+
+    file.close()
+
 
 def perspective_projection(focal, center):
     # return p.T (N, 3) @ (3, 3) 
@@ -69,11 +95,12 @@ class ParametricFaceModel:
             self.mean_shape = mean_shape.reshape([-1, 1])
 
         self.persc_proj = perspective_projection(focal, center)
-        self.device = 'cpu'
+        self.device = 'cuda'
         self.camera_distance = camera_distance
         self.camera_pos = self._get_camera_pose()
         self.reverse_z = self._get_reverse_z()
         self.SH = SH()
+        self.renderer = self._get_renderer(self.device)
         self.init_lit = init_lit.reshape([1, 1, -1]).astype(np.float32)
         
 
@@ -83,7 +110,39 @@ class ParametricFaceModel:
             if type(value).__module__ == np.__name__:
                 setattr(self, key, torch.tensor(value).to(device))
 
-    
+    def _get_renderer(self, device):
+        R, T = look_at_view_transform(10, 0, 0)  # camera's position
+        self.focal = 1015
+        self.img_size = 224
+        cameras = FoVPerspectiveCameras(device=device, R=R, T=T, znear=0.01,
+                                        zfar=1500,
+                                        fov=2*np.arctan(self.img_size//2/self.focal)*180./np.pi)
+
+        lights = PointLights(device=device, location=[[0.0, 0.0, 1e5]],
+                              ambient_color=[[1, 1, 1]],
+                              specular_color=[[0., 0., 0.]], diffuse_color=[[0., 0., 0.]])
+
+        raster_settings = RasterizationSettings(
+            image_size=self.img_size,
+            blur_radius=0.0,
+            faces_per_pixel=1,
+        )
+        blend_params = blending.BlendParams(background_color=[0, 0, 0])
+
+        renderer = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                cameras=cameras,
+                raster_settings=raster_settings
+            ),
+            shader=SoftPhongShader(
+                device=device,
+                cameras=cameras,
+                lights=lights,
+                blend_params=blend_params
+            )
+        )
+        return renderer
+
     def compute_shape(self, id_coeff, exp_coeff):
         """
         Return:
@@ -97,7 +156,7 @@ class ParametricFaceModel:
         id_part = torch.einsum('ij,aj->ai', self.id_base, id_coeff)
         exp_part = torch.einsum('ij,aj->ai', self.exp_base, exp_coeff)
         face_shape = id_part + exp_part + self.mean_shape.reshape([1, -1])
-        return face_shape.reshape([batch_size, -1, 3])
+        return face_shape.reshape([batch_size, -1, 3]) - self.mean_shape.view(1, -1, 3).mean(dim=1, keepdim=True)
     
 
     def compute_texture(self, tex_coeff, normalize=True):
@@ -190,7 +249,7 @@ class ParametricFaceModel:
             zeros, torch.cos(x), -torch.sin(x), 
             zeros, torch.sin(x), torch.cos(x)
         ], dim=1).reshape([batch_size, 3, 3])
-        
+
         rot_y = torch.cat([
             torch.cos(y), zeros, torch.sin(y),
             zeros, ones, zeros,
@@ -312,4 +371,13 @@ class ParametricFaceModel:
         face_norm_roted = face_norm @ rotation
         face_color = self.compute_color(face_texture, face_norm_roted, coef_dict['gamma'])
 
-        return face_vertex, face_texture, face_color, landmark
+        # face_color_tv = TexturesVertex(face_color[:1])
+        # print(face_proj.size(), face_vertex.size())
+        # mesh = Meshes(face_shapes_trans[:1], self.face_buf.repeat(1, 1, 1), face_color_tv)
+        # rendered_img = self.renderer(mesh)
+        # rendered_img = torch.clamp(rendered_img, 0, 255).detach().cpu().numpy().squeeze()
+        # print(rendered_img[:,:,:3].shape, coef_dict['angle'][0])
+        # import cv2
+        # cv2.imwrite('out.png', rendered_img[:,:,:3])
+        # save_obj('mesh.obj', face_vertex[0], self.face_buf+1, face_color[0])
+        return face_shape_transformed, face_vertex, face_texture, face_color, landmark
